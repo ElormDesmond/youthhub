@@ -34,9 +34,14 @@ function initDatabase() {
     if (!isSqliteForced && isPostgresForced) {
         try {
             const { Pool } = require('pg');
-            const poolConfig = process.env.DATABASE_URL
+            let dbUrl = process.env.DATABASE_URL;
+            if (dbUrl) {
+                dbUrl = dbUrl.replace(/[?&]sslmode=[^&]+/g, '');
+            }
+
+            const poolConfig = dbUrl
                 ? {
-                    connectionString: process.env.DATABASE_URL,
+                    connectionString: dbUrl,
                     ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
                     connectionTimeoutMillis: 15000,
                     idleTimeoutMillis: 30000,
