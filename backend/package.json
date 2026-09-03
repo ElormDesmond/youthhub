@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "build": "echo 'Backend build complete'",
     "dev": "node server.js",
     "db:init": "node src/db/init.js",
     "db:seed": "node src/db/seed.js",
