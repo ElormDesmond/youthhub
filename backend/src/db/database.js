@@ -13,12 +13,16 @@ let sqliteDb = null;
 
 function setupSqlite() {
     dbDriver = 'sqlite';
-    const Database = require('better-sqlite3');
-    const dbPath = path.resolve(__dirname, '../../youth_attendance.sqlite');
-    sqliteDb = new Database(dbPath);
-    sqliteDb.pragma('foreign_keys = ON');
-    sqliteDb.pragma('journal_mode = WAL');
-    return sqliteDb;
+    try {
+        const Database = require('better-sqlite3');
+        const dbPath = path.resolve(__dirname, '../../youth_attendance.sqlite');
+        sqliteDb = new Database(dbPath);
+        sqliteDb.pragma('foreign_keys = ON');
+        sqliteDb.pragma('journal_mode = WAL');
+        return sqliteDb;
+    } catch (err) {
+        console.warn('SQLite setup skipped or unavailable:', err.message);
+    }
 }
 
 // Initialize Database connection
