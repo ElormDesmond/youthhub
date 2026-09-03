@@ -38,7 +38,9 @@ function initDatabase() {
                 ? {
                     connectionString: process.env.DATABASE_URL,
                     ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false },
-                    connectionTimeoutMillis: 5000,
+                    connectionTimeoutMillis: 15000,
+                    idleTimeoutMillis: 30000,
+                    max: 10,
                   }
                 : {
                     user: process.env.DB_USER || 'postgres',
@@ -46,7 +48,7 @@ function initDatabase() {
                     host: process.env.DB_HOST || 'localhost',
                     port: parseInt(process.env.DB_PORT || '5432', 10),
                     database: process.env.DB_NAME || 'youth_attendance',
-                    connectionTimeoutMillis: 2000,
+                    connectionTimeoutMillis: 10000,
                 };
 
             pgPool = new Pool(poolConfig);
@@ -57,7 +59,9 @@ function initDatabase() {
             dbDriver = 'pg';
         } catch (err) {
             console.warn('PostgreSQL driver init warning:', err.message);
-            setupSqlite();
+            if (!process.env.DATABASE_URL && process.env.DB_TYPE !== 'postgres') {
+                setupSqlite();
+            }
         }
     } else {
         // Default to SQLite for zero-configuration local development
@@ -76,9 +80,10 @@ async function query(text, params = []) {
             const res = await pgPool.query(text, params);
             return res;
         } catch (err) {
-            // Fallback to SQLite if connection/auth error
-            if (process.env.DB_TYPE !== 'postgres') {
-                console.warn('⚠️ Postgres auth/connection error, using local SQLite database...');
+            console.error('PostgreSQL query error:', err.message);
+            // Fallback to SQLite only if DATABASE_URL is NOT provided and DB_TYPE is NOT postgres
+            if (!process.env.DATABASE_URL && process.env.DB_TYPE !== 'postgres') {
+                console.warn('⚠️ Postgres connection error, falling back to SQLite...');
                 if (!sqliteDb) setupSqlite();
                 return querySqlite(text, params);
             }
