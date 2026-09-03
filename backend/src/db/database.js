@@ -36,7 +36,7 @@ function initDatabase() {
             const { Pool } = require('pg');
             let dbUrl = process.env.DATABASE_URL;
             if (dbUrl) {
-                dbUrl = dbUrl.replace(/[?&]sslmode=[^&]+/g, '');
+                dbUrl = dbUrl.trim().replace(/\s+/g, '').replace(/[?&]sslmode=[^&]+/g, '');
             }
 
             const poolConfig = dbUrl
