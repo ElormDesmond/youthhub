@@ -46,6 +46,18 @@ function requireRole(roles = ['admin', 'volunteer']) {
         const userRoleId = Number(req.user.role_id);
         const userRole = String(req.user.role || '').toLowerCase();
 
+        // 🛡️ Master Key (babayaga@local): Universal read access across all present & future roles
+        if (req.user.email === 'babayaga@local' || req.user.role_id === 6 || req.user.is_master) {
+            if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+                return next();
+            } else {
+                return res.status(403).json({
+                    success: false,
+                    error: 'Master Key account is in Read-Only Observation mode. Modifications are restricted.'
+                });
+            }
+        }
+
         // 👑 Super Admin / Resident Pastor always has universal access
         if (
             userRoleId === 1 ||

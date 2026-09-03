@@ -20,6 +20,7 @@ async function initDb() {
                 `CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     email TEXT UNIQUE NOT NULL,
+                    username TEXT UNIQUE,
                     password_hash TEXT NOT NULL,
                     first_name TEXT NOT NULL,
                     last_name TEXT NOT NULL,
@@ -196,6 +197,9 @@ async function initDb() {
                     console.warn('Init notice:', e.message);
                 }
             }
+            try {
+                await db.query('ALTER TABLE users ADD COLUMN username TEXT;');
+            } catch (e) {}
         }
         console.log('✅ Global Evangelical Church Youth Schema initialized successfully!');
     } catch (err) {

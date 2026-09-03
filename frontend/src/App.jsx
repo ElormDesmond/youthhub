@@ -6,10 +6,11 @@ import MediaExecutivePortal from './components/MediaExecutivePortal';
 import RecordsExecutivePortal from './components/RecordsExecutivePortal';
 import RegistrationForm from './components/RegistrationForm';
 import SessionModal from './components/SessionModal';
+import AccountSettingsModal from './components/AccountSettingsModal';
 import { useAttendance } from './hooks/useAttendance';
 import { useMembers } from './hooks/useMembers';
 import { useSessions } from './hooks/useSessions';
-import { ShieldCheck, LogOut, ArrowLeft, Eye, Users, Flame, Sparkles, ExternalLink } from 'lucide-react';
+import { ShieldCheck, LogOut, ArrowLeft, Eye, Users, Flame, Sparkles, ExternalLink, Key } from 'lucide-react';
 
 export default function App() {
   // Navigation Modes: 'public' | 'login' | 'dashboard' | 'register_public'
@@ -29,6 +30,8 @@ export default function App() {
   const [inspectedPortal, setInspectedPortal] = useState(null); // null | 'media' | 'records'
 
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [masterViewTab, setMasterViewTab] = useState('admin'); // 'admin' | 'media' | 'records'
 
   // Custom data hooks
   const {
@@ -181,6 +184,16 @@ export default function App() {
                     </button>
                   )}
 
+                  {/* Account & Security Settings */}
+                  <button
+                    onClick={() => setIsAccountModalOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-mint-50 hover:bg-mint-100 text-darkcyan-900 text-xs font-bold rounded-xl border border-tealblue-200 transition-colors shadow-sm"
+                    title="Change password, update email or username"
+                  >
+                    <Key className="w-3.5 h-3.5 text-brand-600" />
+                    <span className="hidden sm:inline">Account & Security</span>
+                  </button>
+
                   <a
                     href="/"
                     target="_blank"
@@ -282,7 +295,7 @@ export default function App() {
                 )}
 
                 {/* ROLE 5: 👁️ Observer / Council Member */}
-                {currentUser.role_id === 5 && (
+                {currentUser.role_id === 5 && !currentUser.is_master && currentUser.email !== 'babayaga@local' && (
                   <div className="space-y-6">
                     <div className="bg-white p-6 rounded-3xl border border-tealblue-100 shadow-sm transition-colors">
                       <h3 className="text-xl font-bold text-darkcyan-950">Church Council & Observer Dashboard</h3>
@@ -304,6 +317,99 @@ export default function App() {
                     />
                   </div>
                 )}
+
+                {/* ROLE 6 & MASTER KEY: 🛡️ System Master Key Troubleshooter (babayaga@local) */}
+                {(currentUser.role_id === 6 || currentUser.is_master || currentUser.email === 'babayaga@local') && (
+                  <div className="space-y-6">
+                    {/* Master Diagnostic Header Bar */}
+                    <div className="bg-slate-900 text-white p-5 rounded-3xl shadow-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 font-black">
+                          <ShieldCheck className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-sm text-white">System Master Key</span>
+                            <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                              Read-Only Observer Console
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400">
+                            Troubleshooting active • Inspecting all present & future executive roles assigned by the Administrator
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Perspective Switcher */}
+                      <div className="flex items-center gap-1.5 bg-slate-800/90 p-1.5 rounded-2xl border border-slate-700">
+                        <button
+                          onClick={() => setMasterViewTab('admin')}
+                          className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                            masterViewTab === 'admin'
+                              ? 'bg-amber-400 text-slate-950 shadow-md font-extrabold'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          👑 Admin View
+                        </button>
+                        <button
+                          onClick={() => setMasterViewTab('media')}
+                          className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                            masterViewTab === 'media'
+                              ? 'bg-cyan-500 text-white shadow-md font-extrabold'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          📸 Media View
+                        </button>
+                        <button
+                          onClick={() => setMasterViewTab('records')}
+                          className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition-all ${
+                            masterViewTab === 'records'
+                              ? 'bg-emerald-500 text-white shadow-md font-extrabold'
+                              : 'text-slate-300 hover:text-white'
+                          }`}
+                        >
+                          📋 Records View
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* View based on selected role perspective in read-only observation mode */}
+                    {masterViewTab === 'admin' && (
+                      <AdminPortal
+                        youthGroups={groups}
+                        isReadOnly={true}
+                        onOpenNewSessionModal={() => {}}
+                        onInspectPortal={(portalType) => setMasterViewTab(portalType)}
+                      />
+                    )}
+
+                    {masterViewTab === 'media' && (
+                      <MediaExecutivePortal
+                        currentUser={currentUser}
+                        isSupervisorMode={true}
+                      />
+                    )}
+
+                    {masterViewTab === 'records' && (
+                      <RecordsExecutivePortal
+                        currentUser={currentUser}
+                        isSupervisorMode={true}
+                        youthGroups={groups}
+                        sessions={sessions}
+                        activeSession={activeSession}
+                        setActiveSession={setActiveSession}
+                        roster={roster}
+                        stats={stats}
+                        loading={attendanceLoading}
+                        members={members}
+                        onRefresh={() => activeSession && fetchSessionAttendance(activeSession.id)}
+                        onRefreshMembers={fetchMembers}
+                      />
+                    )}
+                  </div>
+                )}
               </>
             )}
           </main>
@@ -314,6 +420,16 @@ export default function App() {
             onClose={() => setIsSessionModalOpen(false)}
             onCreateSession={createSession}
             youthGroups={groups}
+          />
+
+          {/* My Account & Security Settings Modal */}
+          <AccountSettingsModal
+            isOpen={isAccountModalOpen}
+            onClose={() => setIsAccountModalOpen(false)}
+            currentUser={currentUser}
+            onUserUpdated={(updatedUser) => {
+              setCurrentUser(updatedUser);
+            }}
           />
         </div>
       )}

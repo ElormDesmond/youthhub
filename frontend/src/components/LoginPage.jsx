@@ -4,25 +4,22 @@ import apiClient from '../api/client';
 
 export default function LoginPage({ onLoginSuccess, onBackToPublic }) {
   const [email, setEmail] = useState('admin@church.local');
-  const [password, setPassword] = useState('Password123!');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const demoAccounts = [
-    { role: '👑 Super Admin', name: 'Pastor David Mensah', email: 'admin@church.local', roleId: 1, color: 'border-amber-500/50 bg-amber-500/10 text-amber-800' },
-    { role: '📸 Media & Creative Lead', name: 'Kofi Ansah', email: 'media@church.local', roleId: 2, color: 'border-cyan-500/50 bg-cyan-500/10 text-cyan-800' },
-    { role: '📋 Records & Attendance', name: 'Abena Osei', email: 'records@church.local', roleId: 3, color: 'border-emerald-500/50 bg-emerald-500/10 text-emerald-800' },
-    { role: '🤝 Youth Leader Volunteer', name: 'Emmanuel Owusu', email: 'volunteer@church.local', roleId: 4, color: 'border-indigo-500/50 bg-indigo-500/10 text-indigo-800' },
-    { role: '👁️ Council Observer', name: 'Elder Kwame Asante', email: 'viewer@church.local', roleId: 5, color: 'border-slate-500/50 bg-slate-500/10 text-slate-800' },
-  ];
-
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
+    if (!password) {
+      setError('Please enter your password');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
-      const response = await apiClient.post('/auth/login', { email, password });
+      const response = await apiClient.post('/auth/login', { email: email.trim(), password });
       const { token, user } = response.data;
       if (token) {
         localStorage.setItem('authToken', token);
@@ -31,30 +28,11 @@ export default function LoginPage({ onLoginSuccess, onBackToPublic }) {
       onLoginSuccess(user);
     } catch (err) {
       console.error('Login error:', err);
-      // Fallback demo accounts
-      const foundMock = demoAccounts.find((a) => a.email.toLowerCase() === email.toLowerCase());
-      if (foundMock) {
-        const mockUser = {
-          id: foundMock.roleId,
-          email: foundMock.email,
-          first_name: foundMock.name.split(' ')[0],
-          last_name: foundMock.name.split(' ')[1] || 'Staff',
-          role_id: foundMock.roleId,
-          role: foundMock.roleId === 1 ? 'admin' : foundMock.roleId === 2 ? 'media_team' : foundMock.roleId === 3 ? 'records_officer' : 'volunteer',
-          title: foundMock.role
-        };
-        onLoginSuccess(mockUser);
-      } else {
-        setError(err.message || 'Invalid email or password');
-      }
+      const errMsg = err.response?.data?.error || err.message || 'Invalid email/username or password';
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSelectDemo = (account) => {
-    setEmail(account.email);
-    setPassword('Password123!');
   };
 
   return (
@@ -70,7 +48,7 @@ export default function LoginPage({ onLoginSuccess, onBackToPublic }) {
           </div>
           <h2 className="text-2xl font-black text-darkcyan-950 tracking-tight">Staff & Executive Portal</h2>
           <p className="text-xs text-darkcyan-700">
-            Secure login for Ministry Leaders, Media Team & Attendance Records
+            Secure login for Church Leadership, Ministry Heads & Executives
           </p>
         </div>
 
@@ -86,17 +64,17 @@ export default function LoginPage({ onLoginSuccess, onBackToPublic }) {
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-darkcyan-800 mb-1">
-              Church Staff Email
+              Staff Email or Username
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-darkcyan-600 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@church.local"
-                className="w-full pl-10 pr-4 py-3 bg-mint-50/40 border border-tealblue-200 rounded-xl text-darkcyan-950 text-xs focus:outline-none focus:border-brand-500 transition-colors"
+                placeholder="admin@church.local or username"
+                className="w-full pl-10 pr-4 py-3 bg-mint-50/40 border border-tealblue-200 rounded-xl text-darkcyan-950 text-xs focus:outline-none focus:border-brand-500 transition-colors font-medium"
               />
             </div>
           </div>
@@ -112,6 +90,7 @@ export default function LoginPage({ onLoginSuccess, onBackToPublic }) {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter your password"
                 className="w-full pl-10 pr-10 py-3 bg-mint-50/40 border border-tealblue-200 rounded-xl text-darkcyan-950 text-xs focus:outline-none focus:border-brand-500 font-mono transition-colors"
               />
               <button
@@ -134,37 +113,30 @@ export default function LoginPage({ onLoginSuccess, onBackToPublic }) {
           </button>
         </form>
 
-        {/* Quick 1-Click Role Switcher Demo Cards */}
-        <div className="pt-4 border-t border-tealblue-100 space-y-2.5">
-          <span className="text-[10px] font-bold uppercase tracking-widest text-darkcyan-700 block text-center">
-            Quick 1-Click Executive Role Demo
-          </span>
-          <div className="space-y-1.5">
-            {demoAccounts.map((account) => (
-              <button
-                key={account.email}
-                type="button"
-                onClick={() => handleSelectDemo(account)}
-                className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all hover:scale-[1.01] ${
-                  email === account.email
-                    ? 'border-brand-500 bg-mint-100/60 ring-1 ring-brand-500'
-                    : 'border-tealblue-100 bg-mint-50/40 hover:bg-mint-50'
-                }`}
-              >
-                <div>
-                  <span className="font-bold text-darkcyan-950 text-xs block">{account.name}</span>
-                  <span className="text-[10px] text-darkcyan-700">{account.email}</span>
-                </div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${account.color}`}>
-                  {account.role}
-                </span>
-              </button>
-            ))}
+        {/* Super Administrator Info Card (NO password shown) */}
+        <div className="p-4 rounded-2xl bg-mint-50/70 border border-tealblue-200/80 space-y-2 text-left">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-darkcyan-950">
+            <ShieldCheck className="w-4 h-4 text-brand-600" />
+            <span>Super Administrator Access</span>
+          </div>
+          <div className="text-[11px] text-darkcyan-800 space-y-1 pl-5">
+            <div>
+              <span className="text-darkcyan-600">Assigned To: </span>
+              <strong className="text-darkcyan-950">Mr. Kinsley</strong>{' '}
+              <span className="text-[10px] bg-brand-100 text-brand-800 font-bold px-1.5 py-0.5 rounded-full">Youth President</span>
+            </div>
+            <div>
+              <span className="text-darkcyan-600">Login Email: </span>
+              <code className="font-mono bg-white px-2 py-0.5 rounded border border-tealblue-100 text-brand-700 font-bold">admin@church.local</code>
+            </div>
+            <p className="text-[10px] text-darkcyan-600 pt-1 leading-normal">
+              🔒 Confidential password is provided directly by the System Administrator. Staff roles are managed exclusively inside the executive portal.
+            </p>
           </div>
         </div>
 
         {/* Back to Public Site */}
-        <div className="text-center pt-2">
+        <div className="text-center pt-1">
           <button
             onClick={onBackToPublic}
             className="text-xs font-bold text-darkcyan-700 hover:text-darkcyan-950 hover:underline transition-colors"
