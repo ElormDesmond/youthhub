@@ -1,6 +1,11 @@
 require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
+const dns = require('dns');
+
+try {
+    dns.setDefaultResultOrder('ipv4first');
+} catch (e) {}
 
 let dbDriver = process.env.DB_TYPE || 'auto';
 let pgPool = null;
