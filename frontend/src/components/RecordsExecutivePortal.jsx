@@ -297,7 +297,7 @@ export default function RecordsExecutivePortal({
             comments.map((com) => (
               <div key={com.id} className="p-3 bg-mint-50/40 border border-tealblue-100 rounded-2xl text-xs space-y-1">
                 <div className="flex justify-between text-darkcyan-700 font-bold text-[10px]">
-                  <span>From: Pastor David Mensah</span>
+                  <span>From: Mr. Kinsley (Youth President)</span>
                   <span>{new Date(com.created_at).toLocaleDateString()}</span>
                 </div>
                 <p className="text-darkcyan-950 leading-relaxed font-medium">"{com.comment_text}"</p>
